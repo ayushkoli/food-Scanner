@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Scanner - Nutrition Lookup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0a0a0a 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Add subtle glow effect to main container */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 22px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .container:hover::before {
+            opacity: 1;
+        }
+
+        .header {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #ffffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .scanner-section {
+            background: linear-gradient(145deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .barcode-input {
+            flex: 1;
+            padding: 15px 18px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .barcode-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .barcode-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .lookup-btn {
+            padding: 15px 28px;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            color: #000000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lookup-btn:hover {
+            background: linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .lookup-btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .lookup-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .camera-btn {
+            padding: 15px 28px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .camera-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .camera-btn:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .camera-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .upload-btn {
+            padding: 15px 28px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-section {
+            margin-top: 15px;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .upload-preview {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin: 15px auto;
+            display: none;
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .modal-buttons {
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 14px;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-btn-stop:hover {
+            background: linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-btn-manual:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-btn-test:hover {
+            background: linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-btn-stop {
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            color: #000000;
+            border: none;
+        }
+
+        .modal-btn-manual {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-btn-test {
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            color: #000000;
+            border: none;
+        }
+
+        .scan-tips {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .scan-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(20,20,20,0.95) 100%);
+            backdrop-filter: blur(15px);
+        }
+
+        .scan-content {
+            position: relative;
+            margin: 5% auto;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            background: linear-gradient(145deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+
+        .close-scan {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+
+        .close-scan:hover {
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+
+        #video {
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: #000;
+            object-fit: cover;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        #video canvas {
+            display: none !important;
+        }
+
+        /* Ensure video shows even when Quagga overlays canvas */
+        .quagga-overlay {
+            display: none !important;
+        }
+
+        .quagga-overlay__drawing {
+            display: none !important;
+        }
+
+        .scan-instructions {
+            margin: 20px 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+        }
+
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            display: none;
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.1) 100%);
+            color: #ff6b6b;
+            padding: 18px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .results {
+            display: none;
+            background: linear-gradient(145deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .product-header {
+            text-align: center;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .product-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .product-name {
+            font-size: 1.8rem;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .product-brand {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 5px;
+        }
+
+        .product-barcode {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .nutrition-section {
+            margin-top: 30px;
+        }
+
+        .nutrition-title {
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .nutrition-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .nutrition-card:hover {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nutrition-card h3 {
+            color: #ffffff;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .nutrition-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+
+        .nutrition-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .nutrition-value {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .ingredients-section {
+            margin-top: 35px;
+            padding: 25px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .ingredients-title {
+            font-size: 1.3rem;
+            color: #ffffff;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .ingredients-text {
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .camera-btn, .upload-btn {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .scan-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            #video {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Food Scanner</h1>
+            <p>Enter a barcode to get detailed nutritional information</p>
+        </div>
+
+        <div class="scanner-section">
+            <div class="input-group">
+                <input type="text" id="barcodeInput" class="barcode-input" 
+                       placeholder="Enter barcode number (e.g., 3017620422003)" 
+                       maxlength="14">
+                <button class="lookup-btn" id="lookupBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>Lookup</button>
+                <button class="camera-btn" id="cameraBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>Camera</button>
+                <button class="upload-btn" id="uploadBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17,8 12,3 7,8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Upload</button>
+            </div>
+            <input type="file" id="imageUpload" class="file-input" accept="image/*">
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Looking up product information...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="product-header">
+                <img id="productImage" class="product-image" src="" alt="Product Image" style="display:none;">
+                <div class="product-name" id="productName"></div>
+                <div class="product-brand" id="productBrand"></div>
+                <div class="product-barcode" id="productBarcode"></div>
+            </div>
+
+            <div class="nutrition-section">
+                <div class="nutrition-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>Nutritional Information (per 100g)</div>
+                <div class="nutrition-grid" id="nutritionGrid"></div>
+            </div>
+
+            <div class="ingredients-section">
+                <div class="ingredients-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>Ingredients</div>
+                <div class="ingredients-text" id="ingredientsText"></div>
+            </div>
+        </div>
+
+
+
+        <!-- Camera Scan Modal -->
+        <div id="scanModal" class="scan-modal">
+            <div class="scan-content">
+                <span class="close-scan" onclick="closeScanModal()">&times;</span>
+                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>Scan Barcode</h3>
+                <div class="scan-instructions">
+                    Point your camera at a barcode and click "Take Photo", or use "Upload Photo Instead" if camera doesn't work
+                </div>
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                <div id="scanOverlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; display: none;">
+                    <div style="text-align: center;">
+                        <div style="animation: pulse 1.5s infinite;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg></div>
+                        <div>Scanning for barcode...</div>
+                    </div>
+                </div>
+                <div id="scanResult" style="margin: 20px 0; font-weight: bold; color: #4ade80; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px;"></div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-stop" onclick="stopScanning()">Stop Camera</button>
+                    <button class="modal-btn modal-btn-test" onclick="scanWithCanvas()">Take Photo</button>
+                    <button class="modal-btn modal-btn-manual" onclick="tryManualScan()">Manual Input</button>
+                    <button class="modal-btn modal-btn-manual" onclick="openUploadDialog()">Upload Photo Instead</button>
+                </div>
+                <div class="scan-tips">
+                    <strong>Tips:</strong> 1) Good lighting 2) Clear barcode view 3) Hold steady 4) Click "Take Photo" when ready
+                </div>
+                <div id="cameraError" style="color: #ff6b6b; margin: 15px 0; padding: 10px; background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3); border-radius: 8px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script>
+        // Get DOM elements
+        const barcodeInput = document.getElementById('barcodeInput');
+        const lookupBtn = document.getElementById('lookupBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const imageUpload = document.getElementById('imageUpload');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        const scanModal = document.getElementById('scanModal');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const scanResult = document.getElementById('scanResult');
+        const cameraError = document.getElementById('cameraError');
+
+
+        // Event listeners
+        lookupBtn.addEventListener('click', lookupBarcode);
+        cameraBtn.addEventListener('click', openScanModal);
+        uploadBtn.addEventListener('click', () => imageUpload.click());
+        imageUpload.addEventListener('change', handleImageUpload);
+        barcodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                lookupBarcode();
+            }
+        });
+
+
+        // Main lookup function
+        async function lookupBarcode() {
+            const barcode = barcodeInput.value.trim();
+            
+            // Validation
+            if (!barcode) {
+                showError('Please enter a barcode number');
+                return;
+            }
+
+            if (!/^\d{8,14}$/.test(barcode)) {
+                showError('Please enter a valid barcode (8-14 digits only)');
+                return;
+            }
+
+            // Show loading state
+            showLoading();
+            hideError();
+            hideResults();
+
+            try {
+                console.log('Fetching data for barcode:', barcode);
+                
+                // Fetch from Open Food Facts API
+                const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+                console.log('API URL:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                hideLoading();
+
+                if (data.status === 0 || !data.product) {
+                    showError('Product not found in database. Try a different barcode.');
+                    return;
+                }
+
+                displayResults(data.product, barcode);
+
+            } catch (err) {
+                console.error('Error fetching product data:', err);
+                hideLoading();
+                
+                // Enhanced error messages
+                if (err.name === 'TypeError' && err.message.includes('fetch')) {
+                    showError('Network error: Please check your internet connection and try again.');
+                } else if (err.message.includes('404')) {
+                    showError('Product not found. This barcode might not be in our database.');
+                } else if (err.message.includes('timeout')) {
+                    showError('Request timed out. Please try again.');
+                } else {
+                    showError('Failed to fetch product data. Please try again.');
+                }
+            }
+        }
+
+        // Display results function
+        function displayResults(product, barcode) {
+            console.log('Displaying results for product:', product);
+
+            // Product basic info
+            document.getElementById('productName').textContent = product.product_name || 'Unknown Product';
+            document.getElementById('productBrand').textContent = product.brands || 'Unknown Brand';
+            document.getElementById('productBarcode').textContent = `Barcode: ${barcode}`;
+
+            // Product image
+            const productImage = document.getElementById('productImage');
+            if (product.image_url) {
+                productImage.src = product.image_url;
+                productImage.style.display = 'block';
+                productImage.onerror = function() {
+                    this.style.display = 'none';
+                };
+            } else {
+                productImage.style.display = 'none';
+            }
+
+            // Display nutrition data
+            displayNutrition(product.nutriments || {});
+            
+            // Display ingredients
+            displayIngredients(product);
+
+            showResults();
+        }
+
+        // Display nutrition information
+        function displayNutrition(nutriments) {
+            const nutritionGrid = document.getElementById('nutritionGrid');
+            nutritionGrid.innerHTML = '';
+
+            // Define nutrition categories
+            const nutritionData = [
+                {
+                    title: 'Energy & Macros',
+                    items: [
+                        { key: 'energy-kcal', label: 'Calories', unit: 'kcal' },
+                        { key: 'proteins', label: 'Protein', unit: 'g' },
+                        { key: 'carbohydrates', label: 'Carbohydrates', unit: 'g' },
+                        { key: 'sugars', label: 'Sugars', unit: 'g' },
+                        { key: 'fat', label: 'Fat', unit: 'g' },
+                        { key: 'saturated-fat', label: 'Saturated Fat', unit: 'g' },
+                        { key: 'fiber', label: 'Fiber', unit: 'g' }
+                    ]
+                },
+                {
+                    title: 'Minerals & Others',
+                    items: [
+                        { key: 'salt', label: 'Salt', unit: 'g' },
+                        { key: 'sodium', label: 'Sodium', unit: 'mg' },
+                        { key: 'calcium', label: 'Calcium', unit: 'mg' },
+                        { key: 'iron', label: 'Iron', unit: 'mg' },
+                        { key: 'potassium', label: 'Potassium', unit: 'mg' },
+                        { key: 'vitamin-c', label: 'Vitamin C', unit: 'mg' }
+                    ]
+                }
+            ];
+
+            nutritionData.forEach(category => {
+                const card = document.createElement('div');
+                card.className = 'nutrition-card';
+                
+                const title = document.createElement('h3');
+                
+                // Add appropriate SVG icon based on category
+                let iconSvg = '';
+                if (category.title.includes('Energy & Macros')) {
+                    iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path></svg>';
+                } else if (category.title.includes('Minerals & Others')) {
+                    iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8m-4-8v16"></path></svg>';
+                }
+                
+                title.innerHTML = iconSvg + category.title;
+                card.appendChild(title);
+
+                let hasData = false;
+                category.items.forEach(item => {
+                    const value = nutriments[`${item.key}_100g`] || nutriments[item.key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        const nutritionItem = document.createElement('div');
+                        nutritionItem.className = 'nutrition-item';
+                        nutritionItem.innerHTML = `
+                            <span class="nutrition-label">${item.label}:</span>
+                            <span class="nutrition-value">${value} ${item.unit}</span>
+                        `;
+                        card.appendChild(nutritionItem);
+                        hasData = true;
+                    }
+                });
+
+                if (!hasData) {
+                    const noData = document.createElement('div');
+                    noData.textContent = 'No data available';
+                    noData.style.color = '#999';
+                    noData.style.fontStyle = 'italic';
+                    card.appendChild(noData);
+                }
+
+                nutritionGrid.appendChild(card);
+            });
+        }
+
+        // Display ingredients
+        function displayIngredients(product) {
+            const ingredientsText = document.getElementById('ingredientsText');
+            
+            if (product.ingredients_text) {
+                ingredientsText.textContent = product.ingredients_text;
+            } else if (product.ingredients && product.ingredients.length > 0) {
+                const ingredients = product.ingredients.map(ing => ing.text || ing.id).join(', ');
+                ingredientsText.textContent = ingredients;
+            } else {
+                ingredientsText.textContent = 'Ingredient information not available';
+                ingredientsText.style.fontStyle = 'italic';
+                ingredientsText.style.color = '#999';
+            }
+        }
+
+        // Utility functions
+        function showLoading() {
+            loading.style.display = 'block';
+            lookupBtn.disabled = true;
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+            lookupBtn.disabled = false;
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            console.error('Error:', message);
+        }
+
+        function hideError() {
+            error.style.display = 'none';
+        }
+
+        function showResults() {
+            results.style.display = 'block';
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function hideResults() {
+            results.style.display = 'none';
+        }
+
+        // Image upload functionality
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Show loading
+            showLoading();
+            hideError();
+            hideResults();
+
+            // Create image element
+            const img = new Image();
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                img.onload = function() {
+                    // Scan barcode from image
+                    scanBarcodeFromImage(img);
+                };
+                img.src = e.target.result;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Extract barcode number from uploaded image
+        function scanBarcodeFromImage(img) {
+            try {
+                console.log('Processing uploaded image...');
+                
+                // Initialize Quagga for image scanning
+                Quagga.decodeSingle({
+                    decoder: {
+                        readers: [
+                            "ean_reader",
+                            "ean_8_reader", 
+                            "upc_reader",
+                            "upc_e_reader",
+                            "code_128_reader",
+                            "code_39_reader"
+                        ]
+                    },
+                    locate: true,
+                    src: img.src
+                }, function(result) {
+                    hideLoading();
+                    console.log('Image barcode detection result:', result);
+                    
+                    if (result && result.codeResult && result.codeResult.code) {
+                        const barcode = result.codeResult.code;
+                        console.log('✅ Barcode number extracted from image:', barcode);
+                        barcodeInput.value = barcode;
+                        lookupBarcode();
+                    } else {
+                        showError('No barcode found in the uploaded image. Please try: 1) A clearer image 2) Better lighting 3) Make sure barcode is clearly visible');
+                    }
+                });
+            } catch (err) {
+                console.error('Error scanning image:', err);
+                hideLoading();
+                showError('Failed to extract barcode from image. Please try a different image.');
+            }
+        }
+
+        // Camera scanning functionality
+        let isScanning = false;
+
+        function openScanModal() {
+            scanModal.style.display = 'block';
+            cameraError.style.display = 'none';
+            
+            // Debug: Check what's available
+            console.log('=== Camera Debug Info ===');
+            console.log('navigator.mediaDevices:', !!navigator.mediaDevices);
+            console.log('getUserMedia:', !!navigator.mediaDevices?.getUserMedia);
+            console.log('User Agent:', navigator.userAgent);
+            console.log('========================');
+            
+            startScanning();
+        }
+
+        function tryManualScan() {
+            const barcode = prompt('Enter barcode manually:');
+            if (barcode && barcode.trim()) {
+                barcodeInput.value = barcode.trim();
+                closeScanModal();
+                lookupBarcode();
+            }
+        }
+
+        function openUploadDialog() {
+            closeScanModal();
+            imageUpload.click();
+        }
+
+        // Capture photo from camera and process it
+        function scanWithCanvas() {
+            if (!video.videoWidth || !video.videoHeight) {
+                scanResult.textContent = 'Camera not ready yet. Please wait...';
+                return;
+            }
+
+            scanResult.textContent = 'Capturing photo...';
+            console.log('Capturing photo from camera...');
+
+            // Create canvas with video dimensions
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            console.log('Photo captured, dimensions:', canvas.width, 'x', canvas.height);
+
+            // Convert canvas to blob and process it
+            canvas.toBlob(function(blob) {
+                if (!blob) {
+                    console.error('Failed to create blob from canvas');
+                    scanResult.textContent = 'Failed to capture photo. Please try again.';
+                    return;
+                }
+                
+                console.log('Blob created, size:', blob.size, 'bytes');
+                
+                // Create a file from the blob
+                const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+                console.log('File created:', file.name, file.size, 'bytes');
+                
+                // Process the captured photo through the working image upload system
+                processCapturedImage(file);
+            }, 'image/jpeg', 0.9); // Higher quality
+        }
+
+        // Process captured photo through the working image upload system
+        function processCapturedImage(file) {
+            console.log('Processing captured photo...');
+            scanResult.textContent = 'Processing captured photo...';
+            
+            // Close the camera modal first
+            closeScanModal();
+            
+            // Show loading
+            showLoading();
+            hideError();
+            hideResults();
+
+            // Create image element and process it
+            const img = new Image();
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                console.log('File reader loaded, creating image...');
+                img.onload = function() {
+                    console.log('Image loaded, scanning for barcode...');
+                    // Use the working image upload system
+                    scanBarcodeFromImage(img);
+                };
+                img.onerror = function() {
+                    console.error('Failed to load image');
+                    hideLoading();
+                    showError('Failed to process captured photo. Please try again.');
+                };
+                img.src = e.target.result;
+            };
+            
+            reader.onerror = function() {
+                console.error('Failed to read file');
+                hideLoading();
+                showError('Failed to read captured photo. Please try again.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function testWithSampleBarcode() {
+            const testBarcode = '3017620422003'; // Nutella barcode
+            barcodeInput.value = testBarcode;
+            closeScanModal();
+            lookupBarcode();
+        }
+
+        function closeScanModal() {
+            scanModal.style.display = 'none';
+            stopScanning();
+        }
+
+        async function startScanning() {
+            if (isScanning) return;
+            
+            isScanning = true;
+            scanResult.textContent = 'Starting camera...';
+            cameraError.style.display = 'none';
+            
+            try {
+                console.log('Requesting camera access...');
+                scanResult.textContent = 'Requesting camera access...';
+
+                // Clear any existing video
+                video.srcObject = null;
+                
+                // Get camera stream
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'environment' // Try back camera first
+                    } 
+                });
+                
+                console.log('Camera access granted!');
+                video.srcObject = stream;
+                
+                // Wait for video to load
+                video.onloadedmetadata = () => {
+                    console.log('Video loaded, dimensions:', video.videoWidth, 'x', video.videoHeight);
+                    scanResult.textContent = 'Camera ready! Click "Take Photo" when you have a barcode in view.';
+                };
+
+                // Start playing video
+                await video.play();
+                console.log('Video started playing');
+                scanResult.textContent = 'Camera ready! Click "Take Photo" when you have a barcode in view.';
+
+            } catch (err) {
+                console.error('Camera error:', err);
+                
+                // Try with simpler constraints if first attempt fails
+                try {
+                    console.log('Trying with simpler camera constraints...');
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = stream;
+                    await video.play();
+                    scanResult.textContent = 'Camera ready! Click "Take Photo" when you have a barcode in view.';
+                } catch (secondErr) {
+                    console.error('Second camera attempt failed:', secondErr);
+                    
+                    let errorMessage = 'Camera not available. ';
+                    
+                    if (err.name === 'NotAllowedError') {
+                        errorMessage += 'Please allow camera permissions and try again, or use "Upload Photo Instead".';
+                    } else if (err.name === 'NotFoundError') {
+                        errorMessage += 'No camera found. Please use "Upload Photo Instead".';
+                    } else {
+                        errorMessage += 'Please use "Upload Photo Instead" button.';
+                    }
+                    
+                    cameraError.textContent = errorMessage;
+                    cameraError.style.display = 'block';
+                    scanResult.textContent = 'Camera not available - Use "Upload Photo Instead"';
+                    isScanning = false;
+                }
+            }
+        }
+
+
+        function stopScanning() {
+            if (isScanning) {
+                isScanning = false;
+                console.log('Stopping scanner...');
+                
+                // Stop Quagga if it's running
+                if (typeof Quagga !== 'undefined') {
+                    try {
+                        Quagga.stop();
+                        Quagga.offDetected();
+                        Quagga.offProcessed();
+                        console.log('Quagga stopped and cleaned up');
+                    } catch (e) {
+                        console.log('Quagga already stopped or not running');
+                    }
+                }
+                
+                // Clear video source and stop all tracks
+                if (video.srcObject) {
+                    const tracks = video.srcObject.getTracks();
+                    tracks.forEach(track => {
+                        track.stop();
+                        console.log('Camera track stopped:', track.kind);
+                    });
+                    video.srcObject = null;
+                    video.src = '';
+                    video.load(); // Reset video element
+                    console.log('Camera stream cleared');
+                }
+                
+                // Clear any pending timeouts
+                if (window.scanTimeout) {
+                    clearTimeout(window.scanTimeout);
+                    window.scanTimeout = null;
+                }
+            }
+        }
+
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target === scanModal) {
+                closeScanModal();
+            }
+        }
+
+        // Food Scanner loaded successfully
+        console.log('Food Scanner loaded successfully!');
+    </script>
+</body>
+</html>
